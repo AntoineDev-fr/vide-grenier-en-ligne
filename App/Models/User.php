@@ -45,6 +45,20 @@ class User extends Model {
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
+    public static function getById($id)
+    {
+        $db = static::getDB();
+
+        $stmt = $db->prepare("
+            SELECT * FROM users WHERE users.id = :id LIMIT 1
+        ");
+
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
 
     /**
      * ?

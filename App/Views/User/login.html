@@ -21,6 +21,9 @@
                     Connexion
                 </div>
                 <div class="l-form">
+                    {% if error is defined %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
                     <form action="" method="post">
                         <div class="form-group">
                             <label for="exampleInputEmail1">Email</label>
@@ -35,7 +38,7 @@
                         <div class="checkbox">
                             <label>
                                 <label class="checkbox">
-                                    <input type="checkbox" name="#">
+                                    <input type="checkbox" name="remember_me" value="1">
                                     <span class="arrow"></span>
                                 </label> <span>Se souvenir de moi</span>
                                 <span class="text2">(non recommandé si vous êtes sur un ordinateur partagé)</span>

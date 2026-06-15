@@ -24,6 +24,9 @@
                     Créer un compte
                 </div>
                 <div class="l-form">
+                    {% if error is defined %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
                     <form method="post" action="">
                         <div class="form-group">
                             <label for="username">Nom d'utilisateur</label>
