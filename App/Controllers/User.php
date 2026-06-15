@@ -3,15 +3,14 @@
 namespace App\Controllers;
 
 use App\Auth;
-use App\Config;
-use App\Model\UserRegister;
+use App\Repositories\UserRepository;
+use App\Services\AuthenticationService;
+use App\Services\RegistrationService;
 use App\Models\Articles;
-use App\Utility\Hash;
-use App\Utility\Session;
 use \Core\View;
+use DomainException;
 use Exception;
-use http\Env\Request;
-use http\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 
 /**
  * User controller
@@ -51,14 +50,14 @@ class User extends \Core\Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $f = $_POST;
 
-            if ($f['password'] !== $f['password-check']) {
+            try {
+                $userID = $this->register($f);
+            } catch (InvalidArgumentException | DomainException $ex) {
                 View::renderTemplate('User/register.html', [
-                    'error' => 'Les mots de passe ne correspondent pas.'
+                    'error' => $ex->getMessage()
                 ]);
                 return;
             }
-
-            $userID = $this->register($f);
 
             if (!$userID || !$this->login($f)) {
                 View::renderTemplate('User/register.html', [
@@ -92,51 +91,22 @@ class User extends \Core\Controller
     private function register($data)
     {
         try {
-            $salt = Hash::generateSalt(32);
-
-            $userID = \App\Models\User::createUser([
-                "email" => $data['email'],
-                "username" => $data['username'],
-                "password" => Hash::generate($data['password'], $salt),
-                "salt" => $salt
-            ]);
-
-            return $userID;
+            return $this->getRegistrationService()->register($data);
 
         } catch (Exception $ex) {
-            // TODO : Set flash if error
-            /* Utility\Flash::danger($ex->getMessage());*/
+            if ($ex instanceof InvalidArgumentException || $ex instanceof DomainException) {
+                throw $ex;
+            }
+
             return false;
         }
     }
 
     private function login($data){
         try {
-            if(!isset($data['email'])){
-                throw new Exception('TODO');
-            }
-
-            $user = \App\Models\User::getByLogin($data['email']);
-
-            if (!$user) {
-                return false;
-            }
-
-            if (Hash::generate($data['password'], $user['salt']) !== $user['password']) {
-                return false;
-            }
-
-            // TODO: Create a remember me cookie if the user has selected the option
-            // to remained logged in on the login form.
-            // https://github.com/andrewdyer/php-mvc-register-login/blob/development/www/app/Model/UserLogin.php#L86
-
-            Auth::login($user, !empty($data['remember_me']));
-
-            return true;
+            return $this->getAuthenticationService()->attempt($data);
 
         } catch (Exception $ex) {
-            // TODO : Set flash if error
-            /* Utility\Flash::danger($ex->getMessage());*/
             return false;
         }
     }
@@ -156,6 +126,16 @@ class User extends \Core\Controller
         exit;
 
         return true;
+    }
+
+    private function getAuthenticationService(): AuthenticationService
+    {
+        return new AuthenticationService(new UserRepository());
+    }
+
+    private function getRegistrationService(): RegistrationService
+    {
+        return new RegistrationService(new UserRepository());
     }
 
 }
