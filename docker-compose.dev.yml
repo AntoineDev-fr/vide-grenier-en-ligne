@@ -1,0 +1,28 @@
+services:
+  web-dev:
+    build: .
+    container_name: videgrenier_web_dev
+    ports:
+      - "8001:80"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      - db-dev
+
+  db-dev:
+    image: mysql:5.7
+    container_name: videgrenier_db_dev
+    restart: always
+    environment:
+      MYSQL_DATABASE: videgrenier
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_dev_data:/var/lib/mysql
+
+volumes:
+  db_dev_data:
