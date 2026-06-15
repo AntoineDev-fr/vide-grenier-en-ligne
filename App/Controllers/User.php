@@ -17,7 +17,6 @@ use http\Exception\InvalidArgumentException;
  */
 class User extends \Core\Controller
 {
-
     /**
      * Affiche la page de login
      */
@@ -42,17 +41,27 @@ class User extends \Core\Controller
      */
     public function registerAction()
     {
-        if(isset($_POST['submit'])){
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $f = $_POST;
 
-            if($f['password'] !== $f['password-check']){
-                // TODO: Gestion d'erreur côté utilisateur
+            if ($f['password'] !== $f['password-check']) {
+                View::renderTemplate('User/register.html', [
+                    'error' => 'Les mots de passe ne correspondent pas.'
+                ]);
+                return;
             }
 
-            // validation
+            $userID = $this->register($f);
 
-            $this->register($f);
-            // TODO: Rappeler la fonction de login pour connecter l'utilisateur
+            if (!$userID || !$this->login($f)) {
+                View::renderTemplate('User/register.html', [
+                    'error' => 'Impossible de creer le compte.'
+                ]);
+                return;
+            }
+
+            header('Location: /account');
+            exit;
         }
 
         View::renderTemplate('User/register.html');
@@ -76,8 +85,6 @@ class User extends \Core\Controller
     private function register($data)
     {
         try {
-            // Generate a salt, which will be applied to the during the password
-            // hashing process.
             $salt = Hash::generateSalt(32);
 
             $userID = \App\Models\User::createUser([
@@ -90,8 +97,9 @@ class User extends \Core\Controller
             return $userID;
 
         } catch (Exception $ex) {
-            // TODO : Set flash if error : utiliser la fonction en dessous
+            // TODO : Set flash if error
             /* Utility\Flash::danger($ex->getMessage());*/
+            return false;
         }
     }
 
@@ -102,6 +110,10 @@ class User extends \Core\Controller
             }
 
             $user = \App\Models\User::getByLogin($data['email']);
+
+            if (!$user) {
+                return false;
+            }
 
             if (Hash::generate($data['password'], $user['salt']) !== $user['password']) {
                 return false;
@@ -121,6 +133,7 @@ class User extends \Core\Controller
         } catch (Exception $ex) {
             // TODO : Set flash if error
             /* Utility\Flash::danger($ex->getMessage());*/
+            return false;
         }
     }
 
