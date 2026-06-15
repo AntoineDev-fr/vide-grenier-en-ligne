@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Auth;
 use App\Config;
 use App\Model\UserRegister;
 use App\Models\Articles;
@@ -17,7 +18,6 @@ use http\Exception\InvalidArgumentException;
  */
 class User extends \Core\Controller
 {
-
     /**
      * Affiche la page de login
      */
@@ -28,10 +28,16 @@ class User extends \Core\Controller
 
             // TODO: Validation
 
-            $this->login($f);
+            if (!$this->login($f)) {
+                View::renderTemplate('User/login.html', [
+                    'error' => 'Email ou mot de passe invalide.'
+                ]);
+                return;
+            }
 
             // Si login OK, redirige vers le compte
             header('Location: /account');
+            exit;
         }
 
         View::renderTemplate('User/login.html');
@@ -42,17 +48,27 @@ class User extends \Core\Controller
      */
     public function registerAction()
     {
-        if(isset($_POST['submit'])){
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $f = $_POST;
 
-            if($f['password'] !== $f['password-check']){
-                // TODO: Gestion d'erreur côté utilisateur
+            if ($f['password'] !== $f['password-check']) {
+                View::renderTemplate('User/register.html', [
+                    'error' => 'Les mots de passe ne correspondent pas.'
+                ]);
+                return;
             }
 
-            // validation
+            $userID = $this->register($f);
 
-            $this->register($f);
-            // TODO: Rappeler la fonction de login pour connecter l'utilisateur
+            if (!$userID || !$this->login($f)) {
+                View::renderTemplate('User/register.html', [
+                    'error' => 'Impossible de creer le compte.'
+                ]);
+                return;
+            }
+
+            header('Location: /account');
+            exit;
         }
 
         View::renderTemplate('User/register.html');
@@ -76,8 +92,6 @@ class User extends \Core\Controller
     private function register($data)
     {
         try {
-            // Generate a salt, which will be applied to the during the password
-            // hashing process.
             $salt = Hash::generateSalt(32);
 
             $userID = \App\Models\User::createUser([
@@ -90,8 +104,9 @@ class User extends \Core\Controller
             return $userID;
 
         } catch (Exception $ex) {
-            // TODO : Set flash if error : utiliser la fonction en dessous
+            // TODO : Set flash if error
             /* Utility\Flash::danger($ex->getMessage());*/
+            return false;
         }
     }
 
@@ -103,6 +118,10 @@ class User extends \Core\Controller
 
             $user = \App\Models\User::getByLogin($data['email']);
 
+            if (!$user) {
+                return false;
+            }
+
             if (Hash::generate($data['password'], $user['salt']) !== $user['password']) {
                 return false;
             }
@@ -111,16 +130,14 @@ class User extends \Core\Controller
             // to remained logged in on the login form.
             // https://github.com/andrewdyer/php-mvc-register-login/blob/development/www/app/Model/UserLogin.php#L86
 
-            $_SESSION['user'] = array(
-                'id' => $user['id'],
-                'username' => $user['username'],
-            );
+            Auth::login($user, !empty($data['remember_me']));
 
             return true;
 
         } catch (Exception $ex) {
             // TODO : Set flash if error
             /* Utility\Flash::danger($ex->getMessage());*/
+            return false;
         }
     }
 
@@ -133,27 +150,10 @@ class User extends \Core\Controller
      * @since 1.0.2
      */
     public function logoutAction() {
-
-        /*
-        if (isset($_COOKIE[$cookie])){
-            // TODO: Delete the users remember me cookie if one has been stored.
-            // https://github.com/andrewdyer/php-mvc-register-login/blob/development/www/app/Model/UserLogin.php#L148
-        }*/
-        // Destroy all data registered to the session.
-
-        $_SESSION = array();
-
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
-            );
-        }
-
-        session_destroy();
+        Auth::logout();
 
         header ("Location: /");
+        exit;
 
         return true;
     }
