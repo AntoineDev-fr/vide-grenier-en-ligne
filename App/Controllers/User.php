@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Auth;
 use App\Config;
 use App\Model\UserRegister;
 use App\Models\Articles;
@@ -27,10 +28,16 @@ class User extends \Core\Controller
 
             // TODO: Validation
 
-            $this->login($f);
+            if (!$this->login($f)) {
+                View::renderTemplate('User/login.html', [
+                    'error' => 'Email ou mot de passe invalide.'
+                ]);
+                return;
+            }
 
             // Si login OK, redirige vers le compte
             header('Location: /account');
+            exit;
         }
 
         View::renderTemplate('User/login.html');
@@ -123,10 +130,7 @@ class User extends \Core\Controller
             // to remained logged in on the login form.
             // https://github.com/andrewdyer/php-mvc-register-login/blob/development/www/app/Model/UserLogin.php#L86
 
-            $_SESSION['user'] = array(
-                'id' => $user['id'],
-                'username' => $user['username'],
-            );
+            Auth::login($user, !empty($data['remember_me']));
 
             return true;
 
@@ -146,27 +150,10 @@ class User extends \Core\Controller
      * @since 1.0.2
      */
     public function logoutAction() {
-
-        /*
-        if (isset($_COOKIE[$cookie])){
-            // TODO: Delete the users remember me cookie if one has been stored.
-            // https://github.com/andrewdyer/php-mvc-register-login/blob/development/www/app/Model/UserLogin.php#L148
-        }*/
-        // Destroy all data registered to the session.
-
-        $_SESSION = array();
-
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
-            );
-        }
-
-        session_destroy();
+        Auth::logout();
 
         header ("Location: /");
+        exit;
 
         return true;
     }
