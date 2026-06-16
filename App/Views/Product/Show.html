@@ -36,11 +36,35 @@
                         <h4>Description:</h4>
                         <p>{{article.description}}</p>
                     </div>
-                    <div class="u-area mt-small">
-
-                    <a name="submit" href="mailto:{{article.email}}" class="btn btn-primary u-btn">Contacter {{article
-                        .username}}</a>
-
+                    <div class="u-area mt-small" id="contact-form">
+                        <a href="#contact-form" class="btn btn-primary u-btn">Contacter {{ article.username }}</a>
+                    </div>
+                    <div class="u-form mt-small">
+                        {% if contactSuccess %}
+                            <div class="alert alert-success">{{ contactSuccess }}</div>
+                        {% endif %}
+                        {% if contactErrors is not empty %}
+                            <div class="alert alert-danger">
+                                {% for error in contactErrors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <form action="" method="post">
+                            <div class="form-group">
+                                <label for="contact_name">Nom</label>
+                                <input type="text" class="form-control" id="contact_name" name="contact_name" value="{{ contactForm.name|e }}" placeholder="Votre nom">
+                            </div>
+                            <div class="form-group">
+                                <label for="contact_email">Email</label>
+                                <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ contactForm.email|e }}" placeholder="votre@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="contact_message">Message</label>
+                                <textarea class="form-control" id="contact_message" name="contact_message" rows="5" placeholder="Votre message">{{ contactForm.message|e }}</textarea>
+                            </div>
+                            <button type="submit" name="contact_submit" class="btn btn-primary u-btn">Envoyer</button>
+                        </form>
                     </div>
                 </div>
             </div>

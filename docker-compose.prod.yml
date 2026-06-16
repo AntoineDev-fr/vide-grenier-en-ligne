@@ -1,41 +1,39 @@
-name: vide-grenier-en-ligne
+name: videgrenier-prod
 
 services:
-  web-dev:
+  web-prod:
     build:
       context: .
       dockerfile: dockerfile
-    container_name: videgrenier_web_dev
+    container_name: videgrenier_web_prod
+    restart: unless-stopped
     environment:
-      APP_ENV: dev
-      APP_SHOW_ERRORS: "true"
-      DB_HOST: db-dev
-      DB_NAME: videgrenier
+      APP_ENV: production
+      APP_SHOW_ERRORS: "false"
+      DB_HOST: db-prod
+      DB_NAME: videgrenier_prod
       DB_USER: user
       DB_PASSWORD: password
     ports:
-      - "8001:80"
-    volumes:
-      - .:/var/www/html
-      - /var/www/html/vendor
+      - "8003:80"
     depends_on:
-      db-dev:
+      db-prod:
         condition: service_healthy
 
-  db-dev:
+  db-prod:
     image: mysql:5.7
-    container_name: videgrenier_db_dev
-    restart: always
+    container_name: videgrenier_db_prod
+    restart: unless-stopped
     environment:
-      MYSQL_DATABASE: videgrenier
+      MYSQL_DATABASE: videgrenier_prod
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "3307:3306"
+      - "3309:3306"
     volumes:
       - ./sql/import.sql:/docker-entrypoint-initdb.d/import.sql:ro
-      - db_dev_data:/var/lib/mysql
+      - db_prod_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uuser", "-ppassword"]
       interval: 10s
@@ -43,4 +41,4 @@ services:
       retries: 10
 
 volumes:
-  db_dev_data:
+  db_prod_data:

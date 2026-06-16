@@ -1,41 +1,38 @@
-name: vide-grenier-en-ligne
+name: videgrenier-recette
 
 services:
-  web-dev:
+  web-recette:
     build:
       context: .
       dockerfile: dockerfile
-    container_name: videgrenier_web_dev
+    container_name: videgrenier_web_recette
     environment:
-      APP_ENV: dev
+      APP_ENV: recette
       APP_SHOW_ERRORS: "true"
-      DB_HOST: db-dev
-      DB_NAME: videgrenier
+      DB_HOST: db-recette
+      DB_NAME: videgrenier_recette
       DB_USER: user
       DB_PASSWORD: password
     ports:
-      - "8001:80"
-    volumes:
-      - .:/var/www/html
-      - /var/www/html/vendor
+      - "8002:80"
     depends_on:
-      db-dev:
+      db-recette:
         condition: service_healthy
 
-  db-dev:
+  db-recette:
     image: mysql:5.7
-    container_name: videgrenier_db_dev
+    container_name: videgrenier_db_recette
     restart: always
     environment:
-      MYSQL_DATABASE: videgrenier
+      MYSQL_DATABASE: videgrenier_recette
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
-      - "3307:3306"
+      - "3308:3306"
     volumes:
       - ./sql/import.sql:/docker-entrypoint-initdb.d/import.sql:ro
-      - db_dev_data:/var/lib/mysql
+      - db_recette_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uuser", "-ppassword"]
       interval: 10s
@@ -43,4 +40,4 @@ services:
       retries: 10
 
 volumes:
-  db_dev_data:
+  db_recette_data:
